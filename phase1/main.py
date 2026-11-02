@@ -3,8 +3,10 @@
 Run with `python main.py` from this folder. Offline unless config.ONLINE is True.
 """
 
+import http.client
 import math
 import os
+import sqlite3
 import sys
 import time
 from contextlib import contextmanager
@@ -17,9 +19,68 @@ import config
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "program"))
 
+import server_pull
 from bandit import HistoryStore, UniformModel, run_experiment, runner
 from bandit.client import PacedClient, validate_settings
 from bandit.common import ARMS, MAX_PULLS, SERVER_URL, VISITORS_PER_PULL, integer
+
+# Safety limits, not settings: config.py can't go above these.
+PULLS_PER_ARM_LIMIT = 200
+PULLS_THIS_RUN_LIMIT = 4800
+
+HTTP_FAILURES = {
+    400: ("The server rejected the request as invalid (HTTP 400).",
+          "Don't change the database. Contact the teaching team."),
+    401: ("The server rejected the username or password (HTTP 401).",
+          "Check GROUP_USERNAME and retype the password. If GP3_PASSWORD is set, clear or correct it."),
+    403: ("The server refused access (HTTP 403). The account may lack access, or the experiment may be closed.",
+          "Check the account, then contact the teaching team if it looks correct."),
+    409: ("The server's pull counter doesn't match this request (HTTP 409). "
+          "Someone else may have used the account.",
+          "Make sure nobody else is pulling. Don't change the database. Contact the teaching team."),
+    429: ("The server is rate-limiting requests (HTTP 429).",
+          "Wait a minute, then run the same command again. Any unfinished request is retried safely."),
+}
+STOP_MESSAGES = {
+    "server_closed": "The server is closed to new pulls.",
+    "group_budget_exhausted": "The group has used all of its pulls.",
+    "deadline_reached": "The project deadline has passed, so no new pulls can start.",
+}
+
+
+class ConfigError(ValueError):
+    """A setting in config.py is outside what this phase allows."""
+
+
+class ProgressModel(UniformModel):
+    """Uniform selection that prints running totals after each live pull is saved."""
+
+    def __init__(self, target):
+        super().__init__()
+        self.target = target
+        self.live = False
+
+    def fit(self, results):
+        self.live = False  # Replaying saved history isn't new progress.
+        super().fit(results)
+        self.live = True
+        return self
+
+    def update(self, result):
+        super().update(result)
+        if self.live:
+            self.print_progress(int(result["Arm"]), result["Reward"])
+
+    def print_progress(self, arm, reward):
+        rates = {i: self.signups[i] / (VISITORS_PER_PULL * self.counts[i])
+                 for i in range(ARMS) if self.counts[i]}
+        high, low = max(rates, key=rates.get), min(rates, key=rates.get)
+        total = sum(self.signups)
+        print("Pull {}/{} ({:.1%}) | arm {}: {} sign-ups, {:.2%} over {} pulls | "
+              "total {} ({:.2%}) | highest arm {} {:.2%} | lowest arm {} {:.2%}".format(
+                  self.total_pulls, self.target, self.total_pulls / self.target, arm, reward,
+                  rates[arm], self.counts[arm], total, total / (VISITORS_PER_PULL * self.total_pulls),
+                  high, rates[high], low, rates[low]), flush=True)
 
 
 @contextmanager
@@ -51,16 +112,93 @@ def resolve_path(value):
     return (path if path.is_absolute() else HERE / path).resolve()
 
 
+def check_whole_number(name, minimum, maximum):
+    value = getattr(config, name)
+    if type(value) is not int or not minimum <= value <= maximum:
+        raise ConfigError("{} must be a whole number from {} to {}.".format(name, minimum, maximum))
+
+
 def validate_config():
-    integer(config.PULLS_PER_ARM, "PULLS_PER_ARM", minimum=1, maximum=MAX_PULLS // ARMS)
-    integer(config.MAX_PULLS_THIS_RUN, "MAX_PULLS_THIS_RUN")
-    integer(config.MAX_RETRIES, "MAX_RETRIES")
+    check_whole_number("PULLS_PER_ARM", 1, PULLS_PER_ARM_LIMIT)
+    check_whole_number("MAX_PULLS_THIS_RUN", 0, PULLS_THIS_RUN_LIMIT)
+    if type(config.MAX_RETRIES) is not int or config.MAX_RETRIES < 0:
+        raise ConfigError("MAX_RETRIES must be a whole number, 0 or higher.")
     for name in ("ONLINE", "ALLOW_UNSAVED_SERVER_PULLS"):
         if type(getattr(config, name)) is not bool:
-            raise ValueError("{} must be True or False".format(name))
+            raise ConfigError("{} must be True or False.".format(name))
     if not isinstance(config.GROUP_USERNAME, str):
-        raise ValueError("GROUP_USERNAME must be a string")
-    validate_settings(config.REQUEST_INTERVAL, config.REQUEST_TIMEOUT)
+        raise ConfigError("GROUP_USERNAME must be text in quotes.")
+    try:
+        validate_settings(config.REQUEST_INTERVAL, config.REQUEST_TIMEOUT)
+    except ValueError:
+        raise ConfigError("REQUEST_INTERVAL must be at least 0.25, and REQUEST_TIMEOUT "
+                          "must be above 0 and at most 60.") from None
+
+
+@contextmanager
+def record_http_status(seen):
+    """Note each HTTP status code, which server_pull hides from its callers. Nothing else is kept."""
+    original = server_pull._request
+
+    def request(*args, **kwargs):
+        seen["status"] = None
+        code, data = original(*args, **kwargs)
+        seen["status"] = code
+        return code, data
+
+    server_pull._request = request
+    try:
+        yield
+    finally:
+        server_pull._request = original
+
+
+def describe_failure(error, status):
+    """Return what happened and what to do. Never echoes server text, which can be arbitrary."""
+    retry = "Run the same command again. Any unfinished request is retried safely."
+    if isinstance(error, ConfigError):
+        return str(error), "Fix config.py, then run again."
+    if status in HTTP_FAILURES:
+        return HTTP_FAILURES[status]
+    if status is not None and status >= 500:
+        return ("The server had a problem or is still waking up (HTTP {}).".format(status),
+                "Wait a few minutes. " + retry)
+    if isinstance(error, server_pull.UncertainPullError):
+        if status == 200:
+            return "The server replied, but its response wasn't valid.", "Contact the teaching team if this repeats."
+        return "No reliable response arrived, even after retries.", "Check your connection. " + retry
+    if isinstance(error, (ConnectionError, TimeoutError, http.client.HTTPException)):
+        return ("Couldn't get a response from the server. It may be waking up, or the connection dropped.",
+                "Check your connection and wait a minute. " + retry)
+    if isinstance(error, sqlite3.Error):
+        return ("Couldn't read or write the database ({}).".format(type(error).__name__),
+                "Close anything else using it and check the disk, then run again. Don't delete the database.")
+    if isinstance(error, OSError):
+        return "Couldn't use a local file: {}".format(error), "Check DB_PATH, LOG_PATH and the disk, then run again."
+    if isinstance(error, EOFError):
+        return "Couldn't read the username or password.", "Run this in PowerShell, cmd or Windows Terminal."
+    if isinstance(error, (RuntimeError, ValueError)):
+        # HTTP rejections were handled above, so these messages come from local code.
+        message = str(error)
+        if "Another driver" in message:
+            return message + ".", "Let the other run finish or close it, then run again."
+        if "belongs to another group" in message:
+            return message + ".", "Use the group account this database was started with."
+        return message + ".", "Check config.py. Contact the teaching team if this repeats."
+    return "Unexpected error ({}).".format(type(error).__name__), "Contact whoever maintains this script."
+
+
+def print_saved_state(db_path):
+    if db_path is None:
+        return
+    try:
+        results, pending = saved_state(db_path)
+    except Exception:
+        return  # The failure above already explains why the database can't be read.
+    print("Saved so far: {} pulls.".format(len(results)), file=sys.stderr)
+    if pending:
+        print("Arm {} has an unfinished request. The next online run retries it first.".format(pending["arm"]),
+              file=sys.stderr)
 
 
 def saved_state(db_path):
@@ -151,7 +289,8 @@ def report(by_arm, completed, elapsed):
 
 
 def main():
-    password = None
+    password, db_path = None, None
+    seen = {"status": None}
     try:
         validate_config()
         db_path = resolve_path(config.DB_PATH)
@@ -162,37 +301,41 @@ def main():
         budget = min(config.MAX_PULLS_THIS_RUN, remaining_pulls(by_arm)) if config.ONLINE else 0
         print("Mode: {}. Pulls planned this run: {}.".format("ONLINE" if config.ONLINE else "OFFLINE", budget))
 
-        completed, elapsed = 0, 0.0
+        completed, elapsed, stop_reason = 0, 0.0, None
         if budget > 0:
             username = config.GROUP_USERNAME.strip() or input("Group username: ").strip()
             if not username:
-                raise ValueError("A group username is required")
+                raise ConfigError("A group username is required. Enter one or set GROUP_USERNAME.")
             password = os.environ.get("GP3_PASSWORD") or getpass("Group password: ")
-            if not server_matches_history(username, password, len(results), pending):
-                return 1
-            started = time.monotonic()
-            summary = run_experiment(UniformModel(), budget, online=True, db_path=db_path,
-                                     username=username, password=password, server_url=SERVER_URL,
-                                     interval=config.REQUEST_INTERVAL, timeout=config.REQUEST_TIMEOUT,
-                                     max_retries=config.MAX_RETRIES, log_path=log_path)
+            with record_http_status(seen):
+                if not server_matches_history(username, password, len(results), pending):
+                    return 1
+                started = time.monotonic()
+                model = ProgressModel(len(results) + remaining_pulls(by_arm))
+                summary = run_experiment(model, budget, online=True, db_path=db_path,
+                                         username=username, password=password, server_url=SERVER_URL,
+                                         interval=config.REQUEST_INTERVAL, timeout=config.REQUEST_TIMEOUT,
+                                         max_retries=config.MAX_RETRIES, log_path=log_path)
             completed, elapsed = summary["completed_pulls"], time.monotonic() - started
-            print("Completed {} pulls. Stop reason: {}.".format(completed, summary["stop_reason"]))
+            stop_reason = summary["stop_reason"]
+            print("Completed {} pulls. Stop reason: {}.".format(completed, stop_reason))
             results, pending = saved_state(db_path)
 
+        if stop_reason in STOP_MESSAGES:
+            print("Run stopped: {}".format(STOP_MESSAGES[stop_reason]), file=sys.stderr)
         if pending:
             print("A request is still pending for arm {}. Rerun online to recover it.".format(pending["arm"]))
         report(rewards_by_arm(results), completed, elapsed)
         print("\nDatabase:", db_path)
-        return 0
+        return 1 if stop_reason in STOP_MESSAGES else 0
     except KeyboardInterrupt:
-        print("Interrupted. Saved results and pending request state are retained. Rerun to continue.",
-              file=sys.stderr)
+        print("Interrupted. Run the same command again to continue.", file=sys.stderr)
+        print_saved_state(db_path)
         return 130
     except Exception as error:
-        # A remote RuntimeError can contain arbitrary server text; do not echo it.
-        print("Run stopped ({}). Check config.py and the local log; "
-              "saved results and pending request state are retained.".format(type(error).__name__),
-              file=sys.stderr)
+        what, action = describe_failure(error, seen["status"])
+        print("Run stopped: {}\nWhat to do: {}".format(what, action), file=sys.stderr)
+        print_saved_state(db_path)
         return 1
     finally:
         password = None
