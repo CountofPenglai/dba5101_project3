@@ -2,9 +2,9 @@
 
 # Live pulls
 ONLINE = False                  # True enables real, budget-consuming requests
-MAX_PULLS_THIS_RUN = 1          # 1 tests the live pull; 2400 then finishes the pilot
-PULLS_PER_ARM = 100             # Pilot target; main.py stops when every arm reaches it
-GROUP_USERNAME = ""             # Assigned group account; blank means prompt
+MAX_PULLS_THIS_RUN = 240        # Upper limit; main.py caps it at what's left (239 after the test pull)
+PULLS_PER_ARM = 10              # Pilot target; main.py stops when every arm reaches it
+GROUP_USERNAME = "group19"             # Assigned group account; blank means prompt
 
 # Files: relative paths are anchored to this folder. Later phases share this database.
 DB_PATH = "../program/data/history.sqlite3"
