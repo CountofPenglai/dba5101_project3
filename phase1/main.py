@@ -10,6 +10,7 @@ import sqlite3
 import sys
 import time
 from contextlib import contextmanager
+from functools import partial
 from getpass import getpass
 from pathlib import Path
 from statistics import mean, variance
@@ -21,6 +22,7 @@ sys.path.insert(0, str(HERE.parent / "program"))
 
 import server_pull
 from bandit import HistoryStore, UniformModel, run_experiment, runner
+from bandit.audit import OnlineLog
 from bandit.client import PacedClient, validate_settings
 from bandit.common import ARMS, MAX_PULLS, SERVER_URL, VISITORS_PER_PULL, integer
 
@@ -53,7 +55,7 @@ class ConfigError(ValueError):
 
 
 class ProgressModel(UniformModel):
-    """Uniform selection that prints running totals after each live pull is saved."""
+    """Uniform selection that prints each live result and running totals once it is saved."""
 
     def __init__(self, target):
         super().__init__()
@@ -69,18 +71,55 @@ class ProgressModel(UniformModel):
     def update(self, result):
         super().update(result)
         if self.live:
-            self.print_progress(int(result["Arm"]), result["Reward"])
+            self.print_progress(result)
 
-    def print_progress(self, arm, reward):
+    def print_progress(self, result):
+        arm = int(result["Arm"])
         rates = {i: self.signups[i] / (VISITORS_PER_PULL * self.counts[i])
                  for i in range(ARMS) if self.counts[i]}
         high, low = max(rates, key=rates.get), min(rates, key=rates.get)
         total = sum(self.signups)
-        print("Pull {}/{} ({:.1%}) | arm {}: {} sign-ups, {:.2%} over {} pulls | "
-              "total {} ({:.2%}) | highest arm {} {:.2%} | lowest arm {} {:.2%}".format(
-                  self.total_pulls, self.target, self.total_pulls / self.target, arm, reward,
+        print("Result:", result, flush=True)
+        print("  Saved {}/{} ({:.1%}) | arm {}: {} sign-ups, {:.2%} over {} pulls | "
+              "total {} ({:.2%}), server NetReward {} | highest arm {} {:.2%} | lowest arm {} {:.2%}".format(
+                  self.total_pulls, self.target, self.total_pulls / self.target, arm, result["Reward"],
                   rates[arm], self.counts[arm], total, total / (VISITORS_PER_PULL * self.total_pulls),
-                  high, rates[high], low, rates[low]), flush=True)
+                  result["NetReward"], high, rates[high], low, rates[low]), flush=True)
+
+
+class ConsoleLog(OnlineLog):
+    """The runner's event log, which also prints retries of an uncertain request."""
+
+    def __init__(self, path, run_id, seen):
+        super().__init__(path, run_id)
+        self.seen = seen
+        self.attempts = None
+
+    def write(self, event, **fields):
+        super().write(event, **fields)
+        attempt, arm = fields.get("attempt"), (fields.get("request") or {}).get("arm")
+        if event == "run_started":
+            self.attempts = fields["max_retries"] + 1
+        elif event == "pull_uncertain":
+            print("Arm {}: no reliable response on attempt {} of {} ({}). {}".format(
+                arm, attempt, self.attempts, uncertain_reason(self.seen["status"]),
+                "Retrying the same request." if fields["retry_scheduled"] else "No retries left."), flush=True)
+        elif event == "pull_completed" and attempt > 1:
+            print("Arm {}: response received on attempt {}. It was the same request, so it counts "
+                  "as one pull.".format(arm, attempt), flush=True)
+
+
+def uncertain_reason(status):
+    """Why a pull response couldn't be trusted, from the last HTTP status seen."""
+    if status is None:
+        return "timed out or the connection dropped"
+    if status == 429:
+        return "rate-limited, HTTP 429"
+    if status >= 500:
+        return "server error or still waking up, HTTP {}".format(status)
+    if status == 200:
+        return "the response wasn't valid"
+    return "HTTP {}".format(status)
 
 
 @contextmanager
@@ -151,6 +190,17 @@ def record_http_status(seen):
         yield
     finally:
         server_pull._request = original
+
+
+@contextmanager
+def console_log(seen):
+    """Have the runner's event log also print retries to the console."""
+    original = runner.OnlineLog
+    runner.OnlineLog = partial(ConsoleLog, seen=seen)
+    try:
+        yield
+    finally:
+        runner.OnlineLog = original
 
 
 def describe_failure(error, status):
@@ -307,9 +357,12 @@ def main():
             if not username:
                 raise ConfigError("A group username is required. Enter one or set GROUP_USERNAME.")
             password = os.environ.get("GP3_PASSWORD") or getpass("Group password: ")
-            with record_http_status(seen):
+            with record_http_status(seen), console_log(seen):
                 if not server_matches_history(username, password, len(results), pending):
                     return 1
+                if pending:
+                    print("Arm {} has an unfinished request from an earlier run. Retrying it first; "
+                          "it counts as one of this run's pulls.".format(pending["arm"]))
                 started = time.monotonic()
                 model = ProgressModel(len(results) + remaining_pulls(by_arm))
                 summary = run_experiment(model, budget, online=True, db_path=db_path,

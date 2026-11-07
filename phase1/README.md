@@ -27,8 +27,8 @@ Run these from this folder. Python 3.9 or later is enough, with nothing extra to
 1. **Check the setup.** Leave `ONLINE = False` and run `python main.py`. This sends no requests. It creates an empty database if there isn't one yet.
 2. **Test with 1 live pull.** Set `ONLINE = True`, leave `MAX_PULLS_THIS_RUN = 1`, and run it again. Enter the group username and password when asked. It makes one pull on arm 0. Before going further, check that:
    - `Server pulls used` reads `0`, unless the group has already saved earlier pulls
+   - the `Result:` line shows arm `'0'` with a plausible `Reward` out of 100 visitors. On the group's first pull, `Pull` is `0` and `NetReward` equals `Reward`
    - it reports `Completed 1 pulls` with stop reason `budget_complete`
-   - arm 0 shows 1 pull with a plausible number of sign-ups, out of 100 visitors
    - the database now exists at `program/data/history.sqlite3`
 
    Ignore the speed line on this run, because one pull is too few to measure it.
@@ -37,6 +37,8 @@ Run these from this folder. Python 3.9 or later is enough, with nothing extra to
 Running it again after that is safe: it never takes an arm past `PULLS_PER_ARM`, so it makes no more pulls. Set `ONLINE = False` when you're done.
 
 **If a run stops or a request times out,** run the same command again. It recovers any unfinished request first, then continues. Don't delete the database or point to a new one to get around an error.
+
+Each saved pull prints a `Result:` line with the server's response, followed by running totals. `total` counts sign-ups saved locally, and `server NetReward` is the server's total for the group. They match while the database holds every pull. If a request gets no reliable response, it prints a `no reliable response` line and retries with the same request ID, so a retry can't count as a second pull.
 
 ## Settings
 

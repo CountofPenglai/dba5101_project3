@@ -21,7 +21,7 @@ Edit `config.py`, then run `python main.py` from this folder.
 
 1. Reads the settings and saved results, and works out how many pulls are left.
 2. If `ONLINE` is `True`, asks for the password and checks the server's pull count against the database.
-3. Pulls the least-pulled arm, saving each result, until it reaches the run limit or every arm reaches its target.
+3. Pulls the least-pulled arm, saving and printing each result, until it reaches the run limit or every arm reaches its target. Retries of an uncertain request are printed too.
 4. Prints each arm's results and the checks.
 
 ## Order of runs
