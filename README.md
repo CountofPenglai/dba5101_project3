@@ -1,5 +1,60 @@
 # GP3: Multi-Armed Bandit Experiment Framework
 
+## Status: 240 of 1,000,000 pulls made
+
+*Updated 7 November 2026, after the phase 1 pilot.*
+
+| Pulls made | Visitors | Sign-ups | Pulls left |
+|---|---|---|---|
+| 240 (10 per arm) | 24,000 | 3,746 (15.6%) | 999,760 |
+
+- **Arm 21 leads** at 25.5% (95% interval 22.9–28.3%), with a 93% chance of being the best arm.
+- **Arms 0, 12, 5 and 16** (21.3–22.0%) still have a small chance of being best.
+- **The other 19 arms** each have under a 0.5% chance of being best. Rates range from 7.1% to 25.5%.
+- **The data checks are normal.**
+  - Pull-to-pull variance is 0.99 times what binomial noise predicts; about 1 ± 0.19 is normal.
+  - 2 of 24 arms moved by more than 2 standard errors between their first and last 5 pulls; 0 to 3 is normal.
+  - All arms together moved 0.0 standard errors.
+
+| Band | Arm | Sign-ups / 1,000 visitors | Rate | 95% interval | P(best) |
+|---|---|---|---|---|---|
+| Leader | 21 | 255 | 25.5% | 22.9–28.3% | 93.0% |
+| In contention | 0 | 220 | 22.0% | 19.5–24.7% | 2.8% |
+| In contention | 12 | 215 | 21.5% | 19.1–24.2% | 1.4% |
+| In contention | 5 | 214 | 21.4% | 19.0–24.1% | 1.2% |
+| In contention | 16 | 213 | 21.3% | 18.9–23.9% | 1.0% |
+| Behind | 22 | 208 | 20.8% | 18.4–23.4% | 0.4% |
+| Behind | 20 | 203 | 20.3% | 17.9–22.9% | 0.2% |
+| Behind | 6 | 197 | 19.7% | 17.4–22.3% | <0.1% |
+| Behind | 19 | 197 | 19.7% | 17.4–22.3% | <0.1% |
+| Behind | 9 | 181 | 18.1% | 15.8–20.6% | <0.1% |
+| Behind | 18 | 170 | 17.0% | 14.8–19.5% | <0.1% |
+| Behind | 14 | 167 | 16.7% | 14.5–19.1% | <0.1% |
+| Behind | 3 | 162 | 16.2% | 14.0–18.6% | <0.1% |
+| Behind | 2 | 133 | 13.3% | 11.3–15.5% | <0.1% |
+| Behind | 8 | 129 | 12.9% | 11.0–15.1% | <0.1% |
+| Behind | 17 | 129 | 12.9% | 11.0–15.1% | <0.1% |
+| Behind | 15 | 126 | 12.6% | 10.7–14.8% | <0.1% |
+| Behind | 13 | 120 | 12.0% | 10.1–14.2% | <0.1% |
+| Behind | 23 | 106 | 10.6% | 8.8–12.7% | <0.1% |
+| Behind | 7 | 93 | 9.3% | 7.7–11.3% | <0.1% |
+| Behind | 11 | 82 | 8.2% | 6.7–10.1% | <0.1% |
+| Behind | 10 | 80 | 8.0% | 6.5–9.8% | <0.1% |
+| Behind | 1 | 75 | 7.5% | 6.0–9.3% | <0.1% |
+| Behind | 4 | 71 | 7.1% | 5.7–8.9% | <0.1% |
+
+**How these were calculated:**
+- **95% interval:** the Beta(1 + sign-ups, 1 + non-sign-ups) posterior for each arm.
+- **P(best):** the share of 400,000 posterior draws in which that arm has the highest rate.
+- **Bands:** "In contention" means P(best) is at least 0.5%; "Behind" means it is below that.
+
+**Files:**
+- The chart is [phase1/figures/arm_ci.png](phase1/figures/arm_ci.png), made by `phase1/plot_arm_ci.py`.
+- Every pull is in `program/data/history.sqlite3`, and the event log is in `program/data/history.online.jsonl`.
+- Next step: [phase2/README.md](phase2/README.md), which simulates 40 UCB and ε-greedy combinations on rates drawn from these posteriors.
+
+---
+
 This project selects among 24 website variants to maximize cumulative sign-ups.
 Each real pull assigns 100 visitors to one arm, numbered 0 through 23. The shared
 group limit is 1,000,000 pulls, including tests and calls from other sessions.
@@ -33,7 +88,7 @@ project3/
 │   │   ├── runner.py          # Public experiment and import functions
 │   │   └── __main__.py        # Command-line interface
 │   ├── tests/                # Entirely offline verification
-│   └── data/                 # Created on use; excluded from version control
+│   └── data/                 # Saved pulls and event log; the pilot's files are committed
 └── docs/superpowers/plans/    # Implementation decisions and verification record
 ```
 
