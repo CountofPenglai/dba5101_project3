@@ -12,10 +12,12 @@ RESULTS_DIR = "results"         # CSVs are written here; each run overwrites the
 PRIOR_A = 1.0
 PRIOR_B = 1.0
 
-# The 40 combinations: 4 uniform totals x (5 UCB multipliers + 5 epsilons)
+# The combinations: each uniform total x (every UCB multiplier, every epsilon, and Thompson Sampling).
+# The original plan's 40 used multipliers 0.05-1; 0.005-0.02 were added after 0.05 won at the edge.
 UNIFORM_TOTALS = [10, 25, 50, 100]          # Pulls per arm, real pilot included, before the method takes over
-UCB_MULTIPLIERS = [0.05, 0.1, 0.25, 0.5, 1]  # Bonus = multiplier x sqrt(2 ln t / n)
+UCB_MULTIPLIERS = [0.005, 0.01, 0.02, 0.05, 0.1, 0.25, 0.5, 1]  # Bonus = multiplier x sqrt(2 ln t / n)
 EPSILONS = [0.01, 0.025, 0.05, 0.1, 0.2]    # Chance of pulling a random arm instead of the leader
+THOMPSON = True                 # Also simulate Thompson Sampling (no parameter to tune) at each uniform total
 
 # Simulation size
 TOTAL_PULLS = 1_000_000         # Whole budget, real pulls included. Lower it if time runs short
