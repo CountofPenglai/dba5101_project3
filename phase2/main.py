@@ -1,8 +1,8 @@
-"""Phase 2: simulate 40 combinations on conversion rates drawn from the pilot's Beta posteriors.
+"""Phase 2: simulate every combination on conversion rates drawn from the pilot's Beta posteriors.
 
 Offline only. Reads phase 1's database read-only, makes no pulls, writes CSVs to results/.
 
-    python main.py            Run the 40 combinations, compare them, then validate the leaders
+    python main.py            Run the combinations, compare them, then validate the leaders
     python main.py check      Check the simulator against hand calculations and program/bandit
     python main.py --reps 20 --total-pulls 50000     Quick trial with smaller settings
 """
@@ -26,12 +26,14 @@ import simulate as sim
 from simulate import K, V
 
 HERE = Path(__file__).resolve().parent
-NAMES = {'ucb': 'UCB', 'eps': 'e-greedy'}
-METHOD_ID = {'ucb': 1, 'eps': 2}
+NAMES = {'ucb': 'UCB', 'eps': 'e-greedy', 'ts': 'Thompson'}
+METHOD_ID = {'ucb': 1, 'eps': 2, 'ts': 3}
 MAIN_STREAM, VALIDATE_STREAM = 1, 2
 
 
 def label(kind, param, per_arm):
+    if kind == 'ts':
+        return 'Thompson, {}/arm'.format(per_arm)
     value = 'x{:g}'.format(param) if kind == 'ucb' else '{:g}'.format(param)
     return '{} {}, {}/arm'.format(NAMES[kind], value, per_arm)
 
@@ -53,6 +55,8 @@ def validate_settings(reps, total_pulls):
         fail('UCB_MULTIPLIERS must be above 0.')
     if not config.EPSILONS or any(not 0 < e <= 1 for e in config.EPSILONS):
         fail('EPSILONS must be above 0 and at most 1.')
+    if type(config.THOMPSON) is not bool:
+        fail('THOMPSON must be True or False.')
     if config.PRIOR_A <= 0 or config.PRIOR_B <= 0:
         fail('PRIOR_A and PRIOR_B must be above 0.')
     if type(reps) is not int or reps < 2 or type(config.VALIDATE_REPS) is not int or config.VALIDATE_REPS < 2:
@@ -115,7 +119,7 @@ def make_jobs(combos, worlds, pulls, signups, stream, total_pulls):
         groups.setdefault((kind, per_arm), []).append(param)
     return [dict(kind=kind, params=params, per_arm=per_arm, worlds=worlds, pulls=pulls,
                  signups=signups, seed=config.SEED, stream=stream, method_id=METHOD_ID[kind],
-                 horizon=total_pulls)
+                 horizon=total_pulls, prior=(config.PRIOR_A, config.PRIOR_B))
             for (kind, per_arm), params in groups.items()]
 
 
@@ -182,6 +186,9 @@ def phase3_note(row, pulls):
     if row['method'] == 'UCB':
         print('  2. UCB with bonus x{:g}: program/bandit UCBModel(exploration={:g}), '
               'because exploration = 2 x multiplier^2.'.format(row['param'], 2 * row['param'] ** 2))
+    elif row['method'] == 'Thompson':
+        print('  2. Thompson Sampling: before each pull, draw a rate from every arm\'s Beta(1 + sign-ups, '
+              '1 + non-sign-ups) and pull the highest draw. program/bandit has no Thompson model yet.')
     else:
         print('  2. e-greedy with e = {:g}: with that chance pull a random arm (any of 24), otherwise the '
               'arm with the highest mean, ties to the lowest arm. program/bandit has no e-greedy model '
@@ -241,7 +248,8 @@ def run(reps, total_pulls):
     posterior_rows = print_posterior(pulls, signups, a, b)
 
     combos = ([('ucb', m, n) for n in config.UNIFORM_TOTALS for m in config.UCB_MULTIPLIERS]
-              + [('eps', e, n) for n in config.UNIFORM_TOTALS for e in config.EPSILONS])
+              + [('eps', e, n) for n in config.UNIFORM_TOTALS for e in config.EPSILONS]
+              + ([('ts', 0.0, n) for n in config.UNIFORM_TOTALS] if config.THOMPSON else []))
     print('\nStep 3: {} combinations x {} worlds, {:,} pulls each ({:,} real + {:,} simulated).'.format(
         len(combos), reps, total_pulls, used, total_pulls - used))
     worlds = sim.draw_worlds(a, b, reps, config.SEED, MAIN_STREAM)
@@ -255,9 +263,14 @@ def run(reps, total_pulls):
     table = summarize(rows, real_signups)
     print_table(table)
 
+    # The leaders, plus the best of any method not among them, so every method is checked.
     top = table[:config.VALIDATE_TOP]
-    print('\nStep 4b: validate. The top {} rerun on {} fresh worlds, because the best of 40 on the same '
-          'worlds\nlooks better than it is.'.format(len(top), config.VALIDATE_REPS))
+    for method in NAMES.values():
+        if not any(r['method'] == method for r in top):
+            top += [r for r in table if r['method'] == method][:1]
+    print('\nStep 4b: validate. The top {} and the best of each method ({} in all) rerun on {} fresh '
+          'worlds,\nbecause the best of {} on the same worlds looks better than it is.'.format(
+              config.VALIDATE_TOP, len(top), config.VALIDATE_REPS, len(table)))
     fresh = sim.draw_worlds(a, b, config.VALIDATE_REPS, config.SEED, VALIDATE_STREAM)
     kinds = {v: k for k, v in NAMES.items()}
     val_rows = run_jobs(make_jobs([(kinds[r['method']], r['param'], r['per_arm']) for r in top],
@@ -277,8 +290,8 @@ def run(reps, total_pulls):
                    'rerun before choosing.'.format(leader, validation[0]['combination']))
     print('\n' + verdict)
     chosen = table[0]
-    grid = config.UCB_MULTIPLIERS if chosen['method'] == 'UCB' else config.EPSILONS
-    if chosen['param'] in (min(grid), max(grid)):
+    grid = {'UCB': config.UCB_MULTIPLIERS, 'e-greedy': config.EPSILONS}.get(chosen['method'])
+    if grid and chosen['param'] in (min(grid), max(grid)):
         print('Note: {:g} is at the edge of the values tried, so a value beyond it might do even better. '
               'Consider adding one to config.py and rerunning.'.format(chosen['param']))
     phase3_note(validation[0] if held['rank'] != 1 and not held['tied_with_leader'] else table[0], pulls)
@@ -362,7 +375,29 @@ def check():
     report('e = 0.1 loss matches the formula', abs(simulated.mean() - expected) < 4 * se,
            'simulated {:,.0f}, formula {:,.0f} (SE {:,.0f})'.format(simulated.mean(), expected, se))
 
-    # 4. The uniform phase tops every arm up to exactly the target, and no further.
+    # 4. Thompson Sampling matches a plain one-pull-at-a-time version fed the same random numbers.
+    P = np.random.default_rng(13).uniform(.10, .20, (1, K))
+    n0, s0 = np.full((1, K), 10.0), np.round(P * V * 10)
+    res = sim.run_policy('ts', [0.0], P, n0, s0, 240, 240 + 3000, np.random.default_rng(14), trace=True)
+    rng, n, s, mismatches = np.random.default_rng(14), n0.copy(), s0.copy(), 0
+    for arm_sim, reward_sim in zip(res['trace']['arms'], res['trace']['rewards']):
+        arm = int(rng.beta(1 + s, 1 + V * n - s).argmax())
+        reward = int(rng.binomial(V, P[:, arm])[0])
+        mismatches += arm != arm_sim or reward != reward_sim
+        n[0, arm] += 1
+        s[0, arm] += reward
+    report('Thompson matches a plain loop', mismatches == 0, '{} of 3000 pulls differ'.format(mismatches))
+
+    # 5. Thompson concentrates on an obvious winner (30% against 10%).
+    P = np.full((lanes, K), .10)
+    P[:, 3] = .30
+    n0, s0 = np.full((lanes, K), 10.0), P * V * 10
+    res = sim.run_policy('ts', np.zeros(lanes), P, n0, s0, 240, 240 + 2000, np.random.default_rng(15))
+    share = (res['best_share'] * 2240 - 10) / 2000  # Share of the 2,000 new pulls
+    report('Thompson finds an obvious winner', share.mean() > .95,
+           '{:.1%} of new pulls went to the best arm'.format(share.mean()))
+
+    # 6. The uniform phase tops every arm up to exactly the target, and no further.
     P = np.full((3, K), .15)
     start = np.arange(K) * 2  # Some arms start above the target
     n, s, uniform_p, added = sim.top_up(P, start, start * 15, 25, np.random.default_rng(12))
@@ -370,7 +405,7 @@ def check():
     report('uniform phase tops up to the target', bool((n == target).all()) and added == int((target - start).sum()),
            '{} pulls added, arms now have {} to {} pulls'.format(added, int(n.min()), int(n.max())))
 
-    # 5. The Beta posterior uses sign-ups and non-sign-ups.
+    # 7. The Beta posterior uses sign-ups and non-sign-ups.
     a, b = sim.posterior([10, 10], [150, 0])
     report('Beta posterior', list(a) == [151, 1] and list(b) == [851, 1001],
            'arm with 150/1000 -> Beta(151, 851); arm with 0/1000 -> Beta(1, 1001)')

@@ -46,7 +46,7 @@ def checkpoints(start, horizon, count=40):
     return np.unique(np.geomspace(start + 1, horizon, count).astype(int))
 
 
-def run_policy(kind, param, P, n, s, start, horizon, rng, trace=False):
+def run_policy(kind, param, P, n, s, start, horizon, rng, trace=False, prior=(1.0, 1.0)):
     """Simulate pulls start..horizon-1 one at a time. Lane i uses param[i].
 
     kind 'ucb': pull argmax of mean + param * sqrt(2 ln t / n), with t the pulls
@@ -54,6 +54,9 @@ def run_policy(kind, param, P, n, s, start, horizon, rng, trace=False):
                 exploration = 2 * param**2. Ties go to the lowest arm.
     kind 'eps': with probability param, pull a uniformly random arm (any of the
                 24); otherwise pull the arm with the highest mean.
+    kind 'ts':  Thompson Sampling. Draw one rate from every arm's
+                Beta(prior_a + sign-ups, prior_b + non-sign-ups) and pull the
+                highest draw. param is ignored.
     """
     lanes = len(P)
     n, s = n.astype(float), s.astype(float)
@@ -65,6 +68,9 @@ def run_policy(kind, param, P, n, s, start, horizon, rng, trace=False):
         isq = 1 / np.sqrt(n)
         qf = isq.reshape(-1)
         coef = (param * math.sqrt(2))[:, None]
+    elif kind == 'ts':
+        beta_a, beta_b = prior[0] + s, prior[1] + V * n - s
+        af, bf = beta_a.reshape(-1), beta_b.reshape(-1)
     elif kind != 'eps':
         raise ValueError(kind)
 
@@ -84,6 +90,8 @@ def run_policy(kind, param, P, n, s, start, horizon, rng, trace=False):
         for i in range(steps):
             if kind == 'ucb':
                 arms = (mu + coef * math.sqrt(math.log(t)) * isq).argmax(axis=1)
+            elif kind == 'ts':
+                arms = rng.beta(beta_a, beta_b).argmax(axis=1)
             else:
                 arms = np.where(explore[i], random_arm[i], mu.argmax(axis=1))
             flat = base + arms
@@ -97,6 +105,9 @@ def run_policy(kind, param, P, n, s, start, horizon, rng, trace=False):
             mf[flat] = total / (V * pulls)
             if kind == 'ucb':
                 qf[flat] = 1 / np.sqrt(pulls)
+            elif kind == 'ts':
+                af[flat] = prior[0] + total
+                bf[flat] = prior[1] + V * pulls - total
             if trace:
                 log['arms'].append(int(arms[0]))
                 log['rewards'].append(int(reward[0]))
@@ -140,7 +151,8 @@ def run_group(job):
     rng = np.random.default_rng([seed, stream, 2, job['method_id'], per_arm])
     tile = len(params)
     res = run_policy(job['kind'], np.repeat(params, reps), np.tile(P, (tile, 1)),
-                     np.tile(n, (tile, 1)), np.tile(s, (tile, 1)), start, horizon, rng)
+                     np.tile(n, (tile, 1)), np.tile(s, (tile, 1)), start, horizon, rng,
+                     prior=job.get('prior', (1.0, 1.0)))
 
     best = P.max(axis=1)
     uniform_regret = V * (best * added - uniform_p)
