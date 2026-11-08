@@ -2,11 +2,54 @@
 
 ## Status: 240 of 1,000,000 pulls made
 
-*Updated 7 November 2026, after the phase 1 pilot.*
+*Updated 8 November 2026, after the phase 2 offline simulation.*
 
 | Pulls made | Visitors | Sign-ups | Pulls left |
 |---|---|---|---|
 | 240 (10 per arm) | 24,000 | 3,746 (15.6%) | 999,760 |
+
+- **Done:** the phase 1 pilot (10 real pulls on each of the 24 arms) and the phase 2 offline simulation, which made no pulls.
+- **Proposed next:** run UCB with bonus multiplier 0.05, starting straight from the pilot, until 1,200 pulls in total (960 more). Then recheck how it is going.
+- **Open question:** how to approach Thompson Sampling, or whether to drop it, since it wasn't in the course content.
+
+### Phase 2 findings (offline simulation)
+
+Phase 2 drew 200 possible worlds of true conversion rates from the pilot's Beta posteriors. In each world it played 56 combinations out to 1,000,000 pulls. Each combination is a number of uniform pulls per arm, then UCB, ε-greedy or Thompson Sampling. The top 5, plus each method's best, were then rerun on 200 fresh worlds that the ranking never saw. Details are in [phase2/README.md](phase2/README.md).
+
+- **Start straight from the pilot.** Adding uniform pulls before the method only cost sign-ups. Going to 100 per arm cost about 21,000 more, whichever method followed.
+- **Three settings lead.** Thompson Sampling, UCB ×0.05 and UCB ×0.02 each lost between about 540 and 2,550 sign-ups on the fresh worlds. That is compared with always pulling the true best arm, which would earn about 25.6 million.
+- **UCB ×0.02 has a big downside.** Its average is close to the leaders, but it lost about 448,000 sign-ups in its worst fresh world. UCB ×0.05 never lost more than about 7,800.
+- **Smaller multipliers are worse.** UCB ×0.01 and ×0.005 lost 24,000–45,000 on average, and 1.35–1.8 million in their worst worlds.
+- **ε-greedy and standard UCB1 fall far behind.** The best ε-greedy setting (ε = 0.01) lost about 104,000; standard UCB1 (×1) lost about 719,000.
+
+| Fresh-world rank | Combination | Sign-ups lost vs best arm (± 2 SE) | Worst world |
+|---|---|---|---|
+| 1 | Thompson Sampling, from the pilot | 542 ± 83 | 4,235 |
+| 2 | UCB ×0.05, from the pilot | 1,378 ± 182 | 7,783 |
+| 3 | UCB ×0.02, from the pilot | 2,547 ± 4,481 | 447,523 |
+| 4 | Thompson Sampling, 25 per arm first | 3,903 ± 68 | 7,651 |
+| 5 | UCB ×0.02, 25 per arm first | 6,807 ± 6,275 | 631,108 |
+| 6 | ε-greedy 0.01, from the pilot | 103,918 ± 5,012 | 536,188 |
+
+Charts: [phase2/figures/findings.png](phase2/figures/findings.png) and [phase2/figures/top5_expected_vs_worst.png](phase2/figures/top5_expected_vs_worst.png).
+
+### Proposal: UCB ×0.05 until 1,200 pulls, then recheck
+
+- **What:** UCB pulls the arm with the highest `mean + 0.05 × √(2 ln t / n)`, starting from the pilot data with no more uniform pulls. In `program/bandit` this is `UCBModel(exploration=0.005)`, because exploration = 2 × multiplier².
+- **Why UCB ×0.05:** it was the best course method on the fresh worlds, and its worst case was small. It averaged 836 ± 114 sign-ups behind Thompson Sampling, about 0.003% of the total. UCB ×0.02 averaged about the same but had a far larger worst case.
+- **Checkpoint:** after 960 more pulls (under 0.1% of the budget), recheck how it is going before using more of the budget.
+
+### Open question: Thompson Sampling
+
+Thompson Sampling lost the fewest sign-ups on the fresh worlds and had the smallest worst case. But it wasn't in the course content, and `program/bandit` has no Thompson model yet. The options are:
+
+- use it live, after adding a Thompson model to `program/bandit` and explaining it in the report;
+- keep it in the report only as a simulated comparison; or
+- drop it.
+
+In the simulation, choosing UCB ×0.05 instead cost about 836 ± 114 sign-ups.
+
+### Phase 1 pilot
 
 - **Arm 21 leads** at 25.5% (95% interval 22.9–28.3%), with a 93% chance of being the best arm.
 - **Arms 0, 12, 5 and 16** (21.3–22.0%) still have a small chance of being best.
@@ -51,7 +94,7 @@
 **Files:**
 - The chart is [phase1/figures/arm_ci.png](phase1/figures/arm_ci.png), made by `phase1/plot_arm_ci.py`.
 - Every pull is in `program/data/history.sqlite3`, and the event log is in `program/data/history.online.jsonl`.
-- Next step: [phase2/README.md](phase2/README.md), which simulates 40 UCB and ε-greedy combinations on rates drawn from these posteriors.
+- Phase 2 draws its simulated worlds from these posteriors; see [phase2/README.md](phase2/README.md).
 
 ---
 
