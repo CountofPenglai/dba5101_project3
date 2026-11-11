@@ -1,0 +1,7 @@
+{
+  "synthetic_rows": 1000000,
+  "load_seconds": 0.119,
+  "python_peak_bytes": 6562,
+  "sqlite_cache_kib": 4096,
+  "fixture_build_seconds": 0.229
+}

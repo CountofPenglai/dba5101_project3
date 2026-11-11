@@ -2,7 +2,7 @@
 
 import math
 
-from .common import ARMS, VISITORS_PER_PULL, normalize_result
+from .common import ARMS, VISITORS_PER_PULL, integer, normalize_result
 
 
 class UniformModel:
@@ -25,6 +25,19 @@ class UniformModel:
         self.total_pulls = 0
         for result in results:
             self.update(result)
+        return self
+
+    def fit_aggregates(self, rows):
+        """Load sufficient statistics without allocating historical response objects."""
+        self.counts = [0] * ARMS
+        self.signups = [0] * ARMS
+        for row in rows:
+            arm = integer(row['arm'], 'arm', maximum=ARMS - 1)
+            count = integer(row['pulls'], 'pulls')
+            signups = integer(row['signups'], 'signups', maximum=VISITORS_PER_PULL * count)
+            self.counts[arm] += count
+            self.signups[arm] += signups
+        self.total_pulls = sum(self.counts)
         return self
 
     def update(self, result):

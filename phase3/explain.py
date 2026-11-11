@@ -44,6 +44,12 @@ def replay(results, e):
     model = UCBModel(e).fit(results[:PILOT_PULLS])
     rows = []
     for row in results[PILOT_PULLS:]:
+        # Historical requests may span several automatic tuning decisions.
+        if row.get('model') == 'ucb' and row.get('parameters'):
+            parameters = row['parameters']
+            if isinstance(parameters, str):
+                parameters = json.loads(parameters)
+            model.exploration = UCBModel(parameters['exploration']).exploration
         means = [model.signups[a] / (V * model.counts[a]) for a in range(ARMS)]
         scores = [model._score(a) for a in range(ARMS)]
         arm, choice = int(row["Arm"]), model.select_arm()
@@ -51,6 +57,7 @@ def replay(results, e):
         runner = max((a for a in range(ARMS) if a != arm), key=lambda a: (scores[a], -a))
         rows.append({
             "pull": row["Pull"], "arm": arm, "replay_matches": arm == choice,
+            "exploration": model.exploration,
             "mean": means[arm], "bonus": scores[arm] - means[arm], "score": scores[arm],
             "runner_up": runner, "runner_up_score": scores[runner], "margin": scores[arm] - scores[runner],
             "leader": leader, "kind": "exploit" if arm == leader else "explore",

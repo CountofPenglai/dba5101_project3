@@ -73,6 +73,12 @@ class ProgressModel(UniformModel):
         if self.live:
             self.print_progress(result)
 
+    def fit_aggregates(self, rows):
+        self.live = False
+        super().fit_aggregates(rows)
+        self.live = True
+        return self
+
     def print_progress(self, result):
         arm = int(result["Arm"])
         rates = {i: self.signups[i] / (VISITORS_PER_PULL * self.counts[i])
@@ -99,7 +105,7 @@ class ConsoleLog(OnlineLog):
         super().write(event, **fields)
         attempt, arm = fields.get("attempt"), (fields.get("request") or {}).get("arm")
         if event == "run_started":
-            self.attempts = fields["max_retries"] + 1
+            self.attempts = fields["max_retries"] + 1 if fields['max_retries'] is not None else 'unlimited'
         elif event == "pull_uncertain":
             print("Arm {}: no reliable response on attempt {} of {} ({}). {}".format(
                 arm, attempt, self.attempts, uncertain_reason(self.seen["status"]),

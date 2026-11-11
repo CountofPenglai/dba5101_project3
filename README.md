@@ -1,16 +1,103 @@
 # GP3: Multi-Armed Bandit Experiment Framework
 
-## Status: 1,200 of 1,000,000 pulls made
+## Continuous runs and optional tuning
 
-*Updated 10 November 2026, after phase 3's first stage.*
+Online execution is paused. After recovering only the original pending request,
+server and local history agree on **15,055 pulls** and **365,500 sign-ups**, with
+**no pending request** (12 November 2026, Singapore time). The group has **984,945
+pulls remaining**. No new batch run was started. See the [recovery verification](phase3/results/pending_recovery_2026-11-12.json).
+Older stage reports below are historical snapshots, not the current counters.
 
-| Pulls made | Visitors | Sign-ups | Pulls left |
-|---|---|---|---|
-| 1,200 (240 pilot + 960 UCB ×0.05) | 120,000 | 26,847 (22.4%) | 998,800 |
+From the project root:
 
-- **Done:** the phase 1 pilot, the phase 2 offline simulation, and phase 3's first stage: UCB ×0.05 from 240 to 1,200 pulls.
-- **Next:** the group recheck, then the next stage of [phase 3](phase3/README.md). To use the whole budget, the rest of the pulls must start by about **04:41 on 12 November, Singapore time**, and keep going.
-- **Method:** UCB ×0.05 rather than Thompson Sampling, for the reasons below. Thompson Sampling appears only in the simulations, for comparison.
+```bash
+# Offline summary (default): no password or network needed
+python3 phase3/main.py
+
+# All remaining group allowance; Ctrl-C requests a graceful stop
+python3 phase3/main.py --online
+
+# Enable local tuning, replanning every 200,000 newly saved pulls
+python3 phase3/main.py --online --auto-tune
+
+# Optional cap on additional pulls in this invocation
+python3 phase3/main.py --online --limit 10000 --auto-tune
+```
+
+Edit [phase3/config.py](phase3/config.py) or the first cell of
+[GP3 Run.ipynb](program/GP3%20Run.ipynb). `MAX_PULLS_THIS_RUN=None` / `BUDGET=None`
+means all remaining pulls. `TARGET_TOTAL_PULLS=None` uses the server's group-wide
+cap of 1,000,000 **including past pulls**. Explicit limits can only reduce this
+allowance. `ONLINE=False` and `AUTO_TUNE=False` are the shipped defaults; fixed UCB
+uses multiplier 0.05 (`exploration=0.005`). Enter the account and password privately
+at runtime. Never save the password in config, notebooks, logs or version control.
+
+The CLI supports the same behavior:
+
+```bash
+cd program
+python3 -m bandit run --online --group group19 --auto-tune
+```
+
+Omit `--budget` to use all remaining pulls. Without `--online` it only trains from
+saved outcomes and recommends an arm. On this machine, Python's default CA file
+is missing; for online commands use `SSL_CERT_FILE=/etc/ssl/cert.pem` as an
+environment prefix, as in `SSL_CERT_FILE=/etc/ssl/cert.pem python3 phase3/main.py
+--online` from the project root. TLS verification remains enabled.
+
+### Long-running behavior
+
+- One sequential driver; start spacing is at least 0.25 seconds. No concurrent HTTP
+  calls or catch-up bursts. The teaching team's `server_pull.py` remains unchanged.
+- Model loading uses SQL sufficient statistics, with only 24 arm states in Python.
+  SQLite has a 4 MiB cache. Progress prints every 1,000 completed pulls. Notebook
+  result previews and log-tail reads are bounded; raw history is streamed to disk.
+- First Ctrl-C/SIGTERM requests a stop after the in-flight response has been saved.
+  A second signal can force interruption. SIGKILL/power failure cannot be graceful;
+  the pending arm, counter and UUID were durably stored before sending.
+- Restart with the same account/database to recover the exact request first.
+  Recovery counts toward the invocation limit. An absolute cap that excludes the
+  pending request leaves it untouched until a suitable recovery run is requested.
+- `MAX_RETRIES=None` retries uncertain responses until stopped, with a >=1-second
+  cooldown and capped exponential backoff. A finite number limits retries.
+  Authentication/counter rejection, local storage failure or history mismatch stops
+  the driver safely; it never invents a fresh request to bypass an unresolved one.
+- Every outcome is committed with SQLite `synchronous=FULL`; logs flush/fsync.
+  Keep enough disk space for the growing database and JSONL log (potentially GBs).
+  Do not run multiple drivers for one group, even with different database files.
+
+### Optional tuning
+
+The tuner evaluates the **whole remaining budget**, using candidate UCB multipliers
+for the next 200,000 pulls and a learning baseline continuation afterwards. It
+compares full expected regret, next-stage loss and weighted cumulative-regret CVaR.
+Independent validation and stage/tail loss allowances govern parameter changes.
+The initial evaluation runs once all arms have observations; subsequent evaluations
+are scheduled every 200,000 newly saved pulls, and the schedule survives restart.
+
+A disposable process receives only aggregate data, uses bounded arrays and has a
+600-second limit. Timeout/failure retains the baseline; manual stop cancels and
+reaps it. All choices are journaled in SQLite and the event log. With tuning off,
+the explicitly configured fixed multiplier is used. NumPy is optional for fixed
+runs and required for tuning. See [algorithm, CVaR definition, safeguards and
+limitations](docs/tuning.md). This is approximate Bayesian rollout with empirical
+risk screening, not a claim of globally optimal or time-consistent risk control.
+
+### Focused validation
+
+At the user's request, this change is checked with focused CVaR, recovery, stopping,
+worker-lifecycle and entrypoint tests rather than a full-suite run. A synthetic
+[million-row loading check](docs/performance/continuous-memory-check.json) and a
+[20,000-pull fake-server soak](docs/performance/continuous-soak-check.json) exercise
+bounded memory and real local durability without consuming experiment pulls.
+
+### Phase 3, stage 2: UCB ×0.05 from 1,200 to 5,000 pulls
+
+- **The run:** 3,800 pulls on 11 November, 21:38–22:05 Singapore time, in 26 minutes 29 seconds, with no retries. The multiplier stayed at 0.05 (`exploration=0.005`).
+- **Sign-ups:** 92,750 from 380,000 new visitors (24.41%). Arm 21 received 3,583 of these pulls; arm 12 received 146.
+- **Current leader:** arm 21 has 4,282 pulls and a 24.50% conversion rate; arm 12 has 313 pulls and a 23.63% rate. Arm 21's estimated P(best) is 99.965%, conditional on the stationary Beta-binomial model.
+- **Verification:** server and local totals agree, every saved UCB choice replays, and there is no pending request. The original 1,200 records were preserved. See [stage2_summary.json](phase3/results/stage2_summary.json).
+- **Speed:** the live run above used the old completion-based delay and achieved 2.39 pulls/second. The subsequent pacing change was verified with status calls only; it did not add pulls. The earlier stage-1 timing estimates below are historical.
 
 ### Phase 3, stage 1: UCB ×0.05 from 240 to 1,200 pulls
 
@@ -203,13 +290,14 @@ Open `program/GP3 Run.ipynb` in Jupyter or a notebook-capable editor. Select a
 Python 3.9+ kernel and work through the cells in order:
 
 1. **Settings:** choose `MODEL_NAME` (`"uniform"` or `"ucb"`), set
-   `UCB_EXPLORATION`, `BUDGET`, and `ONLINE`. The defaults are uniform, a budget of
-   24, and `ONLINE=False`. Account username, paths, request timing and display
+   `UCB_EXPLORATION`, `BUDGET`, `ONLINE` and `AUTO_TUNE`. Defaults are UCB
+   with exploration 0.005, BUDGET=None (all remaining), ONLINE=False and
+   AUTO_TUNE=False. Account username, paths, request timing and display
    limits are also centralized in this first code cell.
 2. **Setup:** load the existing framework and local display helpers. No HTTP calls
    occur. Relative data paths resolve against `program/`, matching the CLI.
 3. **Run the experiment:** offline mode trains from history and recommends an
-   arm. For `ONLINE=True` and a positive budget, enter the group username (unless
+   arm. For `ONLINE=True` and a positive or None budget, enter the group username (unless
    configured) and the password through hidden input. The password is never a
    configuration value, notebook global, or displayed result.
 4. **Refresh saved results and arm statistics:** view group identity, local totals,
@@ -314,10 +402,15 @@ command-line argument. The server defaults to the teaching team's HTTPS address.
   not consume additional pull slots or intentionally create additional pulls.
 - The driver checks server usage before starting fresh requests and respects the
   smaller of the requested budget and the remaining group allowance.
-- Every HTTP call, including status, is paced at least 0.25 seconds after the
-  preceding call finishes. `--interval` can increase this delay, never reduce it.
-- An uncertain response is retried at most `max_retries` times after the first
-  attempt, waiting at least one second before retrying the same request.
+- Every HTTP call, including status, starts at least 0.25 seconds after the
+  preceding call starts. Calls remain sequential: the preceding response must
+  finish first. Network time and local work count toward this interval, rather
+  than adding another 0.25 seconds after a response. `--interval` can increase
+  this spacing, never reduce it. Late requests never trigger catch-up bursts;
+  the next interval always starts from the actual dispatch time.
+- With a finite `max_retries`, an uncertain response is retried at most that many
+  times after the first attempt. None retries until stopped. Every retry preserves
+  identity and waits at least one second, with capped backoff for continuous runs.
 - New requests stop at the assignment deadline, **15 November 2026, 23:59
   Singapore time**, or when the server reports closure. Existing pending requests
   may still be submitted for recovery; the server decides whether recovery is
@@ -328,6 +421,29 @@ command-line argument. The server defaults to the teaching team's HTTPS address.
 
 Online errors stop the run. Earlier committed results remain available. Server
 state remains authoritative if another group member has used the account.
+
+### Throughput and the deadline
+
+On 11 November, 120 sequential status-only requests compared the old and new
+schedulers in alternating blocks. Measured status throughput rose from 2.79 to
+3.60 requests/second; the shortest start interval was 0.25025 seconds and no
+one-second window contained more than four requests. The server stayed at 5,000
+pulls and 119,597 sign-ups. SQLite FULL transactions and per-event log fsync remain
+enabled, as do the one-second retry cooldown and the deadline check after waiting.
+
+Status throughput is not a measured live-pull rate. Replaying the timing of the
+previous 3,800 real pulls predicts about 3.68 pulls/second with the new scheduler;
+the assumptions and raw benchmark are in the [performance report](docs/performance/2026-11-11-online-pacing.md).
+At the benchmark time (11 November, 22:20 Singapore time), completing the remaining
+995,000 pulls required an average of at least 2.83 pulls/second through the deadline.
+At a sustained 3.2 pulls/second they take 86.4 hours, leaving about 11.3 hours for
+interruptions. These are forecasts, not guarantees; include later start time,
+server latency, retries, sleep/offline time, and pauses in the next run's estimate.
+
+On this macOS installation, Python's default CA file is missing. The benchmark
+used `SSL_CERT_FILE=/etc/ssl/cert.pem` for this process to load the existing system
+CA bundle, keeping certificate and hostname verification enabled. No credentials
+or authentication headers are included in the benchmark artifacts.
 
 ## Persistence and existing results
 
@@ -400,7 +516,7 @@ event can leave the log incomplete while the database remains correct.
 
 ## Recovery after interruption
 
-Rerun the same database, group and server with `online=True` and a positive budget.
+Rerun the same database, group and server with `online=True` and a positive or None budget.
 The driver first reuses the saved UUID, counter and arm. An identical retry
 retrieves an already completed result, or performs the one intended pull if it
 had not completed. Only after committing that result may a new arm be selected.
@@ -428,13 +544,13 @@ mean_sign_up_rate[i] + sqrt(exploration * log(total_pulls) / pulls[i])
 ```
 
 The observation unit is one 100-visitor batch. Its reward is `Reward / 100`, so
-`pulls[i]` counts batches, not visitors. The default 2.0 is the usual bounded-reward
+`pulls[i]` counts batches, not visitors. The class constructor default 2.0 is the usual bounded-reward
 UCB1 coefficient; smaller positive values favor exploitation. Scores are selection
 indices and may exceed 1; they are not conversion probabilities or a final
 statistical confidence statement. Unobserved scores are shown as `null` in JSON.
 
 Training aggregates pull counts and sign-ups from saved records. No separate
-optimizer or serialized model is needed; the full policy state is rebuilt from
+optimizer or serialized model is needed for these fixed-policy baselines; policy state is rebuilt from
 history and updated after each completed pull. These baselines assume sufficiently
 stable reward behavior. Historical replay trains a policy but does not provide an
 unbiased estimate of how a different policy would have performed online.

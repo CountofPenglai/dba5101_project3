@@ -1,0 +1,21 @@
+{
+  "verified_at": "2026-11-11T16:01:32.975875+00:00",
+  "recovered_only_original_request": true,
+  "fresh_requests_created": 0,
+  "before_pulls": 15054,
+  "after_pulls": 15055,
+  "before_signups": 365479,
+  "after_signups": 365500,
+  "recovered_pull": 15054,
+  "arm": 21,
+  "reward": 21,
+  "pending_requests": 0,
+  "server_status": {
+    "MaxPulls": 1000000,
+    "NetReward": 365500,
+    "Open": true,
+    "PullsUsed": 15055
+  },
+  "prior_results_unchanged": true,
+  "credential_scan": "no matching credential in repository files"
+}

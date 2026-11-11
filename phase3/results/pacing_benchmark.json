@@ -1,0 +1,1088 @@
+{
+  "started_utc": "2026-11-11T14:19:23.337367+00:00",
+  "finished_utc": "2026-11-11T14:20:01.674010+00:00",
+  "method": "Four alternating blocks (baseline, optimized, optimized, baseline); 30 GET /v1/status calls per block; single sequential driver, interval 0.25s. No pull calls. Both use the unmodified supplied HTTP helper and TLS verification.",
+  "summary": {
+    "baseline": {
+      "requests": 60,
+      "start_interval_seconds": {
+        "mean": 0.3589437212586149,
+        "median": 0.34745366649985954,
+        "p95": 0.42750554099984583,
+        "min": 0.32139524999911373,
+        "max": 0.5924702499996783
+      },
+      "status_requests_per_second": 2.785952060934676,
+      "http_seconds": {
+        "mean": 0.10544652844988983,
+        "median": 0.09479114550049417,
+        "p95": 0.17232770800001163,
+        "min": 0.07004591700024321,
+        "max": 0.3410954169994511
+      },
+      "connection_setup_seconds": {
+        "mean": 0.042986562500179085,
+        "median": 0.0353562085001613,
+        "p95": 0.0918712910006434,
+        "min": 0.023816167000404675,
+        "max": 0.26631437499963795
+      },
+      "new_connections": 60
+    },
+    "optimized": {
+      "requests": 60,
+      "start_interval_seconds": {
+        "mean": 0.27792890660343955,
+        "median": 0.2538504375006596,
+        "p95": 0.25523858400083554,
+        "min": 0.2502502920015104,
+        "max": 1.6216376249994937
+      },
+      "status_requests_per_second": 3.598042435459372,
+      "http_seconds": {
+        "mean": 0.12912739381678573,
+        "median": 0.0945832289999089,
+        "p95": 0.1991352499990171,
+        "min": 0.06999458400059666,
+        "max": 1.621546792001027
+      },
+      "connection_setup_seconds": {
+        "mean": 0.06188972978340341,
+        "median": 0.030884145500749582,
+        "p95": 0.13787516599950322,
+        "min": 0.023361125000519678,
+        "max": 1.5720413330000156
+      },
+      "new_connections": 60
+    }
+  },
+  "max_requests_in_closed_one_second_window": 4,
+  "minimum_start_interval_seconds": 0.2502502920015104,
+  "server_status_before": {
+    "PullsUsed": 5000,
+    "NetReward": 119597,
+    "MaxPulls": 1000000,
+    "Open": true
+  },
+  "server_status_after": {
+    "PullsUsed": 5000,
+    "NetReward": 119597,
+    "MaxPulls": 1000000,
+    "Open": true
+  },
+  "remaining_pulls": 995000,
+  "deadline_utc": "2026-11-15T15:59:00+00:00",
+  "hours_until_deadline": 97.64953499722222,
+  "required_average_pulls_per_second": 2.8304168462937502,
+  "caveat": "Status throughput measures HTTP and pacing, not live pull/database/console work. Historical replay and actual online monitoring are needed for a pull forecast.",
+  "measurements": [
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 0.0,
+      "http_seconds": 0.1045417080003972,
+      "connect_seconds": 0.05075837500044145,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 0.35528770800010534,
+      "http_seconds": 0.0799033330004022,
+      "connect_seconds": 0.028107707999879494,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 0.6902767080009653,
+      "http_seconds": 0.0806079169997247,
+      "connect_seconds": 0.024905958000090322,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 1.0225933750007243,
+      "http_seconds": 0.07734183299908182,
+      "connect_seconds": 0.02641383399895858,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 1.353487041000335,
+      "http_seconds": 0.0776092920004885,
+      "connect_seconds": 0.025678374999188236,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 1.6830637080001907,
+      "http_seconds": 0.1122202919996198,
+      "connect_seconds": 0.0396491249994142,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 2.046792875000392,
+      "http_seconds": 0.0860843329992349,
+      "connect_seconds": 0.032468499999595224,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 2.387992125000892,
+      "http_seconds": 0.18228433299918834,
+      "connect_seconds": 0.12303716700080258,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 2.821321708001051,
+      "http_seconds": 0.09321658299995761,
+      "connect_seconds": 0.04305887500049721,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 3.1696947910004383,
+      "http_seconds": 0.09027774999958638,
+      "connect_seconds": 0.025478333000137354,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 3.511735707999833,
+      "http_seconds": 0.12247341700094694,
+      "connect_seconds": 0.036601125000743195,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 3.889388499999768,
+      "http_seconds": 0.09409995799978788,
+      "connect_seconds": 0.0353384999998525,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 4.236300041000504,
+      "http_seconds": 0.13236666699958732,
+      "connect_seconds": 0.04038254199986113,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 4.620343708000291,
+      "http_seconds": 0.09197037500052829,
+      "connect_seconds": 0.03805695800110698,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 4.964209707999544,
+      "http_seconds": 0.15238770799987833,
+      "connect_seconds": 0.08632000000034168,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 5.367375040999832,
+      "http_seconds": 0.08481025000037334,
+      "connect_seconds": 0.034674541999265784,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 5.707082250000894,
+      "http_seconds": 0.11927162499887345,
+      "connect_seconds": 0.0382515000001149,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 6.080067165999935,
+      "http_seconds": 0.10828983400097059,
+      "connect_seconds": 0.05249250000088068,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 6.443511916000716,
+      "http_seconds": 0.09877091700036544,
+      "connect_seconds": 0.036817249998421175,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 6.794585499999812,
+      "http_seconds": 0.12555891600095492,
+      "connect_seconds": 0.052007374999448075,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 7.1752864999998565,
+      "http_seconds": 0.10738316599963582,
+      "connect_seconds": 0.03535129200099618,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 7.53797808300078,
+      "http_seconds": 0.07004591700024321,
+      "connect_seconds": 0.024383083000429906,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 7.859373332999894,
+      "http_seconds": 0.08061812500091037,
+      "connect_seconds": 0.023816167000404675,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 8.192328416000237,
+      "http_seconds": 0.1096811669995077,
+      "connect_seconds": 0.045615041999553796,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 8.553836375000174,
+      "http_seconds": 0.09962149999955727,
+      "connect_seconds": 0.04388187500080676,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 8.906455791000553,
+      "http_seconds": 0.09658416700040107,
+      "connect_seconds": 0.034119125000870554,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 9.253815041000053,
+      "http_seconds": 0.14391674999933457,
+      "connect_seconds": 0.0456955410008959,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 9.648650082999666,
+      "http_seconds": 0.1159319170001254,
+      "connect_seconds": 0.03308737500083225,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 10.019718833000297,
+      "http_seconds": 0.3410954169994511,
+      "connect_seconds": 0.26631437499963795,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 0,
+      "start": 10.612189082999976,
+      "http_seconds": 0.10646187500060478,
+      "connect_seconds": 0.0336899159992754,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 10.973749165999834,
+      "http_seconds": 0.11677291700107162,
+      "connect_seconds": 0.028047040999808814,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 11.228444665999632,
+      "http_seconds": 0.12632954200125823,
+      "connect_seconds": 0.026384250000774045,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 11.482044665999638,
+      "http_seconds": 0.09065729200119677,
+      "connect_seconds": 0.032758958001068095,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 11.736217125000621,
+      "http_seconds": 0.08906541599935736,
+      "connect_seconds": 0.030496375000439002,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 11.989047458000641,
+      "http_seconds": 0.07017158300004667,
+      "connect_seconds": 0.024583833999713534,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 12.241894415999923,
+      "http_seconds": 0.10789300000033109,
+      "connect_seconds": 0.038384290999601944,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 12.49654879099944,
+      "http_seconds": 0.09121575000062876,
+      "connect_seconds": 0.02982483400046476,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 12.751580750000358,
+      "http_seconds": 0.0945684580001398,
+      "connect_seconds": 0.0280957920003857,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 13.003835333000097,
+      "http_seconds": 0.09277037500032748,
+      "connect_seconds": 0.03127191600106016,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 13.258863291001035,
+      "http_seconds": 0.08494241699918348,
+      "connect_seconds": 0.035381790999963414,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 13.51220629099953,
+      "http_seconds": 0.1306108340013452,
+      "connect_seconds": 0.028346082999632927,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 13.763387208000495,
+      "http_seconds": 0.10573420800028543,
+      "connect_seconds": 0.04295975000059116,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 14.01534725000056,
+      "http_seconds": 0.19529054099984933,
+      "connect_seconds": 0.13787516599950322,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 14.269520457999533,
+      "http_seconds": 0.07391995800026052,
+      "connect_seconds": 0.026277000000845874,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 14.52455741599988,
+      "http_seconds": 0.07590633400104707,
+      "connect_seconds": 0.024350625000806758,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 14.776193457999398,
+      "http_seconds": 0.08785558300041885,
+      "connect_seconds": 0.023630916999536566,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 15.027381625000999,
+      "http_seconds": 0.1142383329988661,
+      "connect_seconds": 0.0498252079996746,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 15.282037750001109,
+      "http_seconds": 0.08471108300000196,
+      "connect_seconds": 0.025727958000061335,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 15.533359416000167,
+      "http_seconds": 0.10536479199981841,
+      "connect_seconds": 0.03554304099998262,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 15.78829633299938,
+      "http_seconds": 0.15668570800153248,
+      "connect_seconds": 0.04575437499988766,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 16.04134941600023,
+      "http_seconds": 0.09098608400017838,
+      "connect_seconds": 0.033148458000141545,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 16.29636329099958,
+      "http_seconds": 0.09085600000071281,
+      "connect_seconds": 0.03389758299999812,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 16.54965004100086,
+      "http_seconds": 0.08752958399963973,
+      "connect_seconds": 0.02918337499977497,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 16.80235850000099,
+      "http_seconds": 0.10878979100016295,
+      "connect_seconds": 0.03492370800086064,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 17.05673629100056,
+      "http_seconds": 0.1090650000005553,
+      "connect_seconds": 0.055471083000156796,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 17.30798733300071,
+      "http_seconds": 0.094597999999678,
+      "connect_seconds": 0.03266112500023155,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 17.560038040999643,
+      "http_seconds": 0.07887162500082923,
+      "connect_seconds": 0.023567291000290425,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 17.81511912499991,
+      "http_seconds": 0.0908051250007702,
+      "connect_seconds": 0.03214391700021224,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 18.068078791000517,
+      "http_seconds": 0.08526583399907395,
+      "connect_seconds": 0.02389091700024437,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 1,
+      "start": 18.323077790999378,
+      "http_seconds": 0.08322950000001583,
+      "connect_seconds": 0.025483500001428183,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 18.65654558300048,
+      "http_seconds": 0.10846537500037812,
+      "connect_seconds": 0.04100108300008287,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 18.908063416000005,
+      "http_seconds": 0.11363512500065553,
+      "connect_seconds": 0.05778887499945995,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 19.159503250000853,
+      "http_seconds": 0.1991352499990171,
+      "connect_seconds": 0.1488577920008538,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 19.410906790999434,
+      "http_seconds": 0.0953600840002764,
+      "connect_seconds": 0.024880375000066124,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 19.66597929099953,
+      "http_seconds": 0.08886970900130109,
+      "connect_seconds": 0.029982875001223874,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 19.9200227500005,
+      "http_seconds": 0.11567887499950302,
+      "connect_seconds": 0.03658750000067812,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 20.17230279100113,
+      "http_seconds": 0.3089517499993235,
+      "connect_seconds": 0.02878745799898752,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 20.481346041000506,
+      "http_seconds": 0.07691279199934797,
+      "connect_seconds": 0.024158457999874372,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 20.736428915999568,
+      "http_seconds": 0.09755899999981921,
+      "connect_seconds": 0.03429924999909417,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 20.991667500000403,
+      "http_seconds": 0.08552299999973911,
+      "connect_seconds": 0.026335624999774154,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 21.24641574999987,
+      "http_seconds": 0.0840101659996435,
+      "connect_seconds": 0.03210212500016496,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 21.50015945800078,
+      "http_seconds": 0.09858012499898905,
+      "connect_seconds": 0.04289049999897543,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 21.752158833000067,
+      "http_seconds": 0.11777079199964646,
+      "connect_seconds": 0.038797500001237495,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 22.006947125000806,
+      "http_seconds": 0.07974979099890334,
+      "connect_seconds": 0.027978459000223665,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 22.261989083001026,
+      "http_seconds": 0.08494187499854888,
+      "connect_seconds": 0.02635625000038999,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 22.512400040999637,
+      "http_seconds": 0.09619916700103204,
+      "connect_seconds": 0.034773207999023725,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 22.766357208000045,
+      "http_seconds": 0.07701420800003689,
+      "connect_seconds": 0.027786709000793053,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 23.01732291600092,
+      "http_seconds": 0.09609933399951842,
+      "connect_seconds": 0.03759404199990968,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 23.271748540999397,
+      "http_seconds": 0.06999458400059666,
+      "connect_seconds": 0.023361125000519678,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 23.524625833000755,
+      "http_seconds": 0.09787974999926519,
+      "connect_seconds": 0.03146395899966592,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 23.779615833000207,
+      "http_seconds": 0.0954037920000701,
+      "connect_seconds": 0.02912829100023373,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 24.03434945800109,
+      "http_seconds": 0.07932808299847238,
+      "connect_seconds": 0.027317415999277728,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 24.289313749999565,
+      "http_seconds": 0.07515733299987915,
+      "connect_seconds": 0.02618191600049613,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 24.544405665999875,
+      "http_seconds": 1.621546792001027,
+      "connect_seconds": 1.5720413330000156,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 26.16604329099937,
+      "http_seconds": 0.1414641670016863,
+      "connect_seconds": 0.029954042000099435,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 26.41629358300088,
+      "http_seconds": 0.10584087499955785,
+      "connect_seconds": 0.05159233299855259,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 26.669446583000536,
+      "http_seconds": 0.09362791700004891,
+      "connect_seconds": 0.03645995899933041,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 26.923800165999637,
+      "http_seconds": 0.13563000000067404,
+      "connect_seconds": 0.04487262499969802,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 27.17438779099939,
+      "http_seconds": 0.09830641700136766,
+      "connect_seconds": 0.023717124999166117,
+      "connections": 1
+    },
+    {
+      "group": "optimized",
+      "block": 2,
+      "start": 27.42709354100043,
+      "http_seconds": 0.09430683400023554,
+      "connect_seconds": 0.026445416999195004,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 27.780038875000173,
+      "http_seconds": 0.0970807909998257,
+      "connect_seconds": 0.03536112499932642,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 28.131952583000384,
+      "http_seconds": 0.0842092919992865,
+      "connect_seconds": 0.030573834001188516,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 28.47131729099965,
+      "http_seconds": 0.11658787499982282,
+      "connect_seconds": 0.036895332999847597,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 28.84022595799979,
+      "http_seconds": 0.08838645800096856,
+      "connect_seconds": 0.030098249999355176,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 29.18235687500055,
+      "http_seconds": 0.09204666599907796,
+      "connect_seconds": 0.03558083300049475,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 29.528364791000058,
+      "http_seconds": 0.08894787499957602,
+      "connect_seconds": 0.03228145800130733,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 29.872467790999508,
+      "http_seconds": 0.07950429199991049,
+      "connect_seconds": 0.02543162499932805,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 30.206881541000257,
+      "http_seconds": 0.09265412499917147,
+      "connect_seconds": 0.03749070800040499,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 30.55272579099983,
+      "http_seconds": 0.0915308340008778,
+      "connect_seconds": 0.03603608299999905,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 30.899354375000257,
+      "http_seconds": 0.07536179099952278,
+      "connect_seconds": 0.02605612500155985,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 31.229877083000247,
+      "http_seconds": 0.08131549999961862,
+      "connect_seconds": 0.029860042001018883,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 31.56617987500067,
+      "http_seconds": 0.09352108299935935,
+      "connect_seconds": 0.037846084000193514,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 31.91372795800089,
+      "http_seconds": 0.1402545419987291,
+      "connect_seconds": 0.06721633300003305,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 32.30564233299992,
+      "http_seconds": 0.0973874169994815,
+      "connect_seconds": 0.04783554200002982,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 32.65466845800074,
+      "http_seconds": 0.0882763329991576,
+      "connect_seconds": 0.03156166700136964,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 32.99444762500025,
+      "http_seconds": 0.08449629099959566,
+      "connect_seconds": 0.027115832999697886,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 33.329934125000364,
+      "http_seconds": 0.0972332910005207,
+      "connect_seconds": 0.03094266700099979,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 33.682326166001076,
+      "http_seconds": 0.0852233339992381,
+      "connect_seconds": 0.02991962499982037,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 34.022716957999364,
+      "http_seconds": 0.08439279200138117,
+      "connect_seconds": 0.02894962500067777,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 34.36105058300018,
+      "http_seconds": 0.09599004200026684,
+      "connect_seconds": 0.04801383299854933,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 34.70785579100084,
+      "http_seconds": 0.08774141699905158,
+      "connect_seconds": 0.03774050000174611,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 35.049502707999636,
+      "http_seconds": 0.09548233300120046,
+      "connect_seconds": 0.03339683400008653,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 35.39902004100077,
+      "http_seconds": 0.08451837499887915,
+      "connect_seconds": 0.03233995899972797,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 35.73644887500086,
+      "http_seconds": 0.09694362499976705,
+      "connect_seconds": 0.030206334000467905,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 36.08660233299997,
+      "http_seconds": 0.10072491699975217,
+      "connect_seconds": 0.04088458300066122,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 36.437523250000595,
+      "http_seconds": 0.07322054100040987,
+      "connect_seconds": 0.026090790999660385,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 36.765907166000034,
+      "http_seconds": 0.14621933399939735,
+      "connect_seconds": 0.057394749999730266,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 37.16618750000089,
+      "http_seconds": 0.17232770800001163,
+      "connect_seconds": 0.0918712910006434,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 37.59369304100073,
+      "http_seconds": 0.13843900000028952,
+      "connect_seconds": 0.030560791999960202,
+      "connections": 1
+    },
+    {
+      "group": "baseline",
+      "block": 3,
+      "start": 37.98658562499986,
+      "http_seconds": 0.09134679099952336,
+      "connect_seconds": 0.037188958000115235,
+      "connections": 1
+    }
+  ],
+  "historical_cycle_replay": {
+    "live_pulls": 3800,
+    "observed_seconds_per_pull": 0.4181922137282277,
+    "inferred_non_wait_mean_seconds": 0.16819221372822768,
+    "projected_seconds_per_pull": 0.27155137482553005,
+    "projected_pulls_per_second": 3.682544419605658,
+    "projected_hours": 75.05378276427844,
+    "assumption": "For each historical completion-to-completion gap, subtract the old 0.25s completion-based delay, then clamp to a 0.25s start interval. This estimates unchanged network/local latency; it is not a new live-pull measurement."
+  },
+  "local_io_benchmark": {
+    "samples": 300,
+    "mean_seconds": 0.0007291904033081664,
+    "median_seconds": 0.000526333499692555,
+    "p95_seconds": 0.0019912910011044005,
+    "scope": "Model select/update, two SQLite FULL transactions, three flushed+fsynced JSONL events, in temporary files; excludes HTTP, pacing, and progress printing."
+  },
+  "deadline_scenarios": [
+    {
+      "sustained_pulls_per_second": 2.3907341039917984,
+      "hours_needed": 115.60837670211988,
+      "finish_utc": "2026-11-16T09:56:31.830138+00:00",
+      "spare_hours": -17.958841704999998
+    },
+    {
+      "sustained_pulls_per_second": 3.0,
+      "hours_needed": 92.12962962962963,
+      "finish_utc": "2026-11-15T10:27:48.340677+00:00",
+      "spare_hours": 5.5199053675
+    },
+    {
+      "sustained_pulls_per_second": 3.2,
+      "hours_needed": 86.37152777777777,
+      "finish_utc": "2026-11-15T04:42:19.174010+00:00",
+      "spare_hours": 11.278007219444444
+    },
+    {
+      "sustained_pulls_per_second": 3.598042435459372,
+      "hours_needed": 76.81646168622844,
+      "finish_utc": "2026-11-14T19:09:00.936080+00:00",
+      "spare_hours": 20.83307331111111
+    },
+    {
+      "sustained_pulls_per_second": 4.0,
+      "hours_needed": 69.09722222222223,
+      "finish_utc": "2026-11-14T11:25:51.674010+00:00",
+      "spare_hours": 28.552312775
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "pulls": 5000,
+  "new_pulls": 3800,
+  "new_signups": 92750,
+  "total_signups": 119597,
+  "seconds": 1589.469943,
+  "speed": 2.3907341039917984,
+  "start_utc": "2026-11-11T13:38:30.835457+00:00",
+  "end_utc": "2026-11-11T14:05:00.305400+00:00",
+  "log_events": {
+    "run_started": 1,
+    "status": 1,
+    "pull_prepared": 3800,
+    "pull_attempt": 3800,
+    "pull_completed": 3800,
+    "run_finished": 1
+  },
+  "next_arm": 21,
+  "top_arms": [
+    {
+      "arm": 21,
+      "pulls": 4282,
+      "signups": 104889,
+      "rate": 0.24495329285380663,
+      "p_best": 0.99965,
+      "new_pulls": 3583
+    },
+    {
+      "arm": 12,
+      "pulls": 313,
+      "signups": 7396,
+      "rate": 0.23629392971246008,
+      "p_best": 0.000315,
+      "new_pulls": 146
+    },
+    {
+      "arm": 0,
+      "pulls": 97,
+      "signups": 2203,
+      "rate": 0.22711340206185568,
+      "p_best": 2.25e-05,
+      "new_pulls": 26
+    },
+    {
+      "arm": 5,
+      "pulls": 47,
+      "signups": 1022,
+      "rate": 0.2174468085106383,
+      "p_best": 0.0,
+      "new_pulls": 18
+    }
+  ],
+  "checks": [
+    "sqlite_integrity",
+    "prior_1200_unchanged",
+    "continuous_0_to_4999",
+    "cumulative_rewards",
+    "all_ucb_decisions_replay",
+    "all_new_logs_match_database",
+    "no_pending_request",
+    "server_totals_match"
+  ],
+  "model": "ucb",
+  "parameters": {
+    "exploration": 0.005
+  },
+  "ucb_multiplier": 0.05,
+  "baseline_pulls": 1200,
+  "stop_reason": "budget_complete",
+  "new_conversion_rate": 0.24407894736842106,
+  "total_conversion_rate": 0.239194,
+  "server_status": {
+    "PullsUsed": 5000,
+    "NetReward": 119597,
+    "MaxPulls": 1000000,
+    "Open": true
+  },
+  "posterior_method": {
+    "prior": [
+      1,
+      1
+    ],
+    "draws": 400000,
+    "seed": 20261111,
+    "assumptions": "Fixed arm conversion rates; independent Bernoulli visitors in batches of 100."
+  },
+  "runtime_environment": {
+    "SSL_CERT_FILE": "/etc/ssl/cert.pem"
+  },
+  "remaining_budget": 995000
+}

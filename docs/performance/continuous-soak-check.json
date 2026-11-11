@@ -1,0 +1,38 @@
+{
+  "fake_pulls": 20000,
+  "http_requests": 20001,
+  "elapsed_seconds": 16.715766458997678,
+  "checkpoints": [
+    {
+      "pulls": 0,
+      "current_python_bytes": 23204,
+      "peak_python_bytes": 24045
+    },
+    {
+      "pulls": 5000,
+      "current_python_bytes": 65094,
+      "peak_python_bytes": 71514
+    },
+    {
+      "pulls": 10000,
+      "current_python_bytes": 64000,
+      "peak_python_bytes": 72562
+    },
+    {
+      "pulls": 15000,
+      "current_python_bytes": 62218,
+      "peak_python_bytes": 72842
+    },
+    {
+      "pulls": 20000,
+      "current_python_bytes": 60366,
+      "peak_python_bytes": 73122
+    },
+    {
+      "pulls": 20000,
+      "current_python_bytes": 56238,
+      "peak_python_bytes": 73122
+    }
+  ],
+  "durability": "real SQLite FULL commits and real fsync audit log; only HTTP and pacing clock replaced"
+}

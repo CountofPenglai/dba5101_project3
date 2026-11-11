@@ -57,6 +57,13 @@ class CliTests(unittest.TestCase):
         self.assertNotEqual(process.returncode, 0)
         self.assertIn("budget", process.stderr.lower())
 
+    def test_omitted_budget_and_optional_tuning_are_offline_without_credentials(self):
+        process = self.cli('run', '--model', 'ucb', '--auto-tune', '--db', self.path)
+        self.assertEqual(process.returncode, 0, process.stderr)
+        result = json.loads(process.stdout)
+        self.assertIsNone(result['requested_budget'])
+        self.assertEqual(result['stop_reason'], 'offline')
+
     def test_malformed_import_rolls_back_prior_lines(self):
         source = Path(self.tmp.name) / "source.jsonl"
         source.write_text('{"Arm":"0","Reward":20,"NetReward":20,"Pull":0}\nnot-json\n')

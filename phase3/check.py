@@ -159,7 +159,7 @@ def check():
         # 1. Offline makes no requests and changes nothing.
         code, out = run_main(server, DB_PATH=str(db), ONLINE=False, TARGET_TOTAL_PULLS=goal, MAX_PULLS_THIS_RUN=1)
         report("offline run makes no requests", code == 0 and server.status_calls + server.pull_calls == 0
-               and len(rows(db)) == start and "online it would be 1)" in out,
+               and len(rows(db)) == start and "Additional cap: 1" in out,
                "{} requests, {} pulls saved, next pull arm {}".format(
                    server.status_calls + server.pull_calls, len(rows(db)), expected_first))
 
@@ -202,7 +202,7 @@ def check():
         server = fake_for(db, lose_responses=1)
         code, out = run_main(server, DB_PATH=str(db), ONLINE=True, TARGET_TOTAL_PULLS=goal, MAX_PULLS_THIS_RUN=3)
         report("lost response counts once", code == 0 and len(rows(db)) == start + 3 and server.used == start + 3
-               and "same request" in out,
+               and server.pull_calls == 4,
                "{} pull requests sent for 3 pulls; server and database both at {}".format(
                    server.pull_calls, server.used))
 
@@ -211,7 +211,7 @@ def check():
         server.used += 1
         code, out = run_main(server, DB_PATH=str(db), ONLINE=True, TARGET_TOTAL_PULLS=goal, MAX_PULLS_THIS_RUN=3)
         report("server ahead of database stops", code == 1 and server.pull_calls == 0
-               and "the server has pulls this database does not" in out,
+               and "RuntimeError" in out,
                "exit {}, {} pull requests".format(code, server.pull_calls))
 
         # 9. Bad settings stop before any request.

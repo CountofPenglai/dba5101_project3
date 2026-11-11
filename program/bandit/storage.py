@@ -11,20 +11,37 @@ from .common import ARMS, MAX_PULLS, integer, normalize_result, server_address, 
 
 @contextmanager
 def driver_lock(path):
-    """One driver per resolved database on this machine (macOS/Linux)."""
-    import fcntl
+    """One driver per resolved database on macOS/Linux/Windows."""
+    try:
+        import fcntl
+    except ImportError:
+        fcntl = None
+        import msvcrt
 
     path = Path(path).expanduser().resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.with_suffix(path.suffix + ".lock").open("a") as handle:
+    with path.with_suffix(path.suffix + ".lock").open("a+b") as handle:
+        if fcntl is None:
+            handle.seek(0, 2)
+            if not handle.tell():
+                handle.write(b'\0')
+                handle.flush()
+            handle.seek(0)
         try:
-            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
+            if fcntl is not None:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            else:
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
             raise RuntimeError("Another driver is using this database") from None
         try:
             yield
         finally:
-            fcntl.flock(handle, fcntl.LOCK_UN)
+            if fcntl is not None:
+                fcntl.flock(handle, fcntl.LOCK_UN)
+            else:
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 class HistoryStore:
@@ -34,6 +51,8 @@ class HistoryStore:
         self.connection = sqlite3.connect(self.path, timeout=5)
         self.connection.row_factory = sqlite3.Row
         self.connection.execute("PRAGMA synchronous = FULL")
+        self.connection.execute("PRAGMA cache_size = -4096")
+        self.connection.execute("PRAGMA temp_store = FILE")
         self.connection.executescript("""
             CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS results (
@@ -42,6 +61,8 @@ class HistoryStore:
                 model TEXT NOT NULL, parameters TEXT NOT NULL, request_id TEXT);
             CREATE TABLE IF NOT EXISTS pending (
                 singleton INTEGER PRIMARY KEY CHECK(singleton = 1), payload TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS tuning_decisions (
+                id INTEGER PRIMARY KEY, at_pull INTEGER NOT NULL, payload TEXT NOT NULL);
         """)
 
     def __enter__(self):
@@ -82,6 +103,25 @@ class HistoryStore:
         for row in self.connection.execute("SELECT * FROM results ORDER BY pull"):
             yield {"Arm": str(row["arm"]), "Reward": row["reward"],
                    "NetReward": row["net_reward"], "Pull": row["pull"]}
+
+    def aggregate(self):
+        """At most 24 rows; SQLite handles history scanning with a bounded cache."""
+        return [dict(row) for row in self.connection.execute(
+            "SELECT arm, COUNT(*) AS pulls, SUM(reward) AS signups FROM results GROUP BY arm")]
+
+    def tuning_state(self):
+        row = self.connection.execute("SELECT value FROM metadata WHERE key='tuning_state'").fetchone()
+        return json.loads(row[0]) if row else None
+
+    def record_tuning(self, decision):
+        payload = json.dumps(decision, allow_nan=False, separators=(',', ':'))
+        with self.connection:
+            if self.pending is not None:
+                raise RuntimeError('Cannot change policy with an unresolved request')
+            self.connection.execute('INSERT INTO tuning_decisions(at_pull,payload) VALUES (?,?)',
+                                    (decision['at_pull'], payload))
+            self.connection.execute("INSERT OR REPLACE INTO metadata VALUES ('tuning_state', ?)",
+                                    (payload,))
 
     def _insert(self, result, model="imported", parameters=None, request_id=None):
         if self.identity is None:
@@ -128,6 +168,11 @@ class HistoryStore:
             if request is None or (int(row["Arm"]), row["Pull"]) != (
                     request["arm"], request["expected_pull"]):
                 raise ValueError("Response does not match the pending request")
+            previous = self.connection.execute('SELECT net_reward FROM results WHERE pull=?',
+                                               (row['Pull']-1,)).fetchone()
+            if (previous is not None and row['NetReward'] != previous[0]+row['Reward']) or (
+                    row['Pull'] == 0 and row['NetReward'] != row['Reward']):
+                raise ValueError('Response cumulative reward does not match saved history')
             inserted = self._insert(row, request["model"], request["parameters"], request["request_id"])
             self.connection.execute("DELETE FROM pending WHERE singleton=1")
         return inserted

@@ -170,6 +170,14 @@ class NotebookTests(unittest.TestCase):
         self.assertEqual(self.ns["last_run_summary"]["stop_reason"], "zero_budget")
         self.assertEqual(self.server.calls, [])
 
+    def test_none_budget_runs_remaining_with_tuning_switch_disabled(self):
+        self.server.maximum = 3
+        self.ns.update(ONLINE=True, BUDGET=None, AUTO_TUNE=False,
+                       GROUP_USERNAME='group-a', getpass=lambda prompt: 'notebook-test-secret')
+        self.execute('run')
+        self.assertIsNone(self.ns['run_error'])
+        self.assertEqual(self.ns['last_run_summary']['completed_pulls'], 3)
+
     def test_log_tail_handles_partial_line_and_escapes_html(self):
         self.ns["LOG_ROWS"] = 2
         path = self.db.with_suffix(".online.jsonl")
