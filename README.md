@@ -1,12 +1,77 @@
 # GP3: Multi-Armed Bandit Experiment Framework
 
+## Final results: all 1,000,000 pulls
+
+The live experiment is complete. All **1,000,000 pulls** were used, sending **100 million visitors** to the 24 arms and producing **24,449,708 sign-ups**, a conversion rate of **24.45%**. The last pull was saved on 14 November at 21:24 Singapore time, about 26.5 hours before pulls closed.
+
+- **Verified:** pull indices 0 to 999,999 are all saved with no gaps and no pending request. The server's running total at the last pull (24,449,708) equals the sum of the saved rewards.
+- **Best arm:** arm 21, at 24.45% (95% interval 24.45% to 24.46%) over 998,794 pulls. Its posterior chance of being the best arm is above 99.99%.
+- **Cost of learning:** taking each arm's estimated rate as its true rate, always showing arm 21 would have earned about 24,453,693 sign-ups. Our total is **3,985 lower (0.016%)**. Of that, 2,108 was lost in the 240-pull pilot and 1,877 in the 999,760 pulls after it.
+- **Method:** UCB ×0.05 (`exploration = 0.005`) from the pilot to pull 816,055. The fifth tuning check then switched to **UCB ×0.02** (`exploration = 0.0008`) for the last 183,945 pulls (see below).
+
+### Results by stage
+
+| Stage | Pulls | Policy | Sign-ups | Conversion | Share to arm 21 | Loss vs arm 21* |
+|---|---|---|---:|---:|---:|---:|
+| Pilot | 0 to 239 | Uniform, 10 per arm | 3,746 | 15.61% | 4.2% | 2,108 |
+| Stage 1 | 240 to 1,199 | UCB ×0.05, fixed | 23,101 | 24.06% | 71.8% | 470 |
+| Stage 2 | 1,200 to 16,054 | UCB ×0.05, fixed | 363,235 | 24.45% | 98.0% | 571 |
+| Stage 3.1 | 16,055 to 216,054 | UCB ×0.05, kept by check 1 | 4,890,143 | 24.45% | 99.85% | 595 |
+| Stage 3.2 | 216,055 to 416,054 | UCB ×0.05, kept by check 2 | 4,891,340 | 24.46% | 99.96% | 179 |
+| Stage 3.3 | 416,055 to 616,054 | UCB ×0.05, kept by check 3 | 4,891,289 | 24.46% | >99.99% | 27 |
+| Stage 3.4 | 616,055 to 816,054 | UCB ×0.05, kept by check 4 | 4,889,672 | 24.45% | 99.99% | 36 |
+| Stage 3.5 | 816,055 to 999,999 | UCB ×0.02, set by check 5 | 4,497,182 | 24.45% | 100% | 0 |
+| **All** | **1,000,000** | | **24,449,708** | **24.45%** | **99.88%** | **3,985** |
+
+\*Sign-ups lost against always pulling arm 21, using each arm's estimated rate as its true rate.
+
+### How the allocation evolved
+
+- **Arm 21 took over quickly.** It led the pilot at 25.5% and received 72% of stage 1, 98% of stage 2 and over 99.8% of every later stage.
+- **Two runners-up got most of the exploration.** Arm 12 ended at 23.30% (22.93% to 23.68%) over 496 pulls, and arm 0 at 22.85% (22.35% to 23.37%) over 261. Arm 12's gap to arm 21 is about 6 standard errors.
+- **Exploration was front-loaded.** After the pilot, 976 pulls went to arms other than 21: 573 before pull 16,055 (3.6% of those pulls) and 403 after it (0.04%).
+- **12 arms were never pulled again after the pilot.** These are the arms with pilot rates of 16.2% or lower. Arm 9 returned at pull 7,053, and arms 18 and 14 at pulls 90,433 and 199,066. These fit the stage 1 forecasts of about 6,600 for arm 9 and 85,000 to 900,000 for arms 18 and 14.
+- **Pull counts follow the UCB rule.** UCB returns to a runner-up only while its bonus 0.05 × √(2 ln t / n) is bigger than its gap to the leader, so each runner-up settles near n ≈ 2(0.05)² ln t / gap². At pull 816,055, the last pull under ×0.05, that predicts 515 pulls for arm 12 (actual 496) and 266 for arm 0 (actual 261).
+
+### Conversion and stability
+
+- **Cumulative conversion** rose from 15.61% after the pilot to 22.37% at 1,200 pulls and 24.30% at 16,055, then settled at 24.45%.
+- **No drift.** Arm 21's rate in 20 blocks of 50,000 pulls ranged from 24.42% to 24.50%. That is consistent with a constant rate (χ² = 23.4 on 19 df, p = 0.22). Per-pull variance is 0.998 times binomial.
+
+### Tuning checks
+
+Each check simulated every multiplier for the next stage, then the current one for the rest of the budget, on 96 posterior worlds. It tested the best alternative on 384 fresh worlds before switching.
+
+| Check | At pull | Pulls left | Expected regret of ×0.05 (± SE) | Best alternative | Decision | Time taken |
+|---|---:|---:|---:|---|---|---:|
+| 1 | 16,055 | 983,945 | 1,018 ± 39 | ×0.03: 1,003 | Kept ×0.05 | 2 m 29 s |
+| 2 | 216,055 | 783,945 | 315 ± 17 | ×0.03: 336 | Kept ×0.05 | 2 m 05 s |
+| 3 | 416,055 | 583,945 | 182 ± 10 | ×0.02: 185 | Kept ×0.05 | 1 m 31 s |
+| 4 | 616,055 | 383,945 | 142 ± 11 | ×0.02: 143 | Kept ×0.05 | 58 s |
+| 5 | 816,055 | 183,945 | 44 ± 3.5 | ×0.02: 0 | **Switched to ×0.02** | 1 m 08 s |
+
+- **Checks 1 to 4:** no alternative was clearly better than ×0.05, so it stayed. Only check 1 had a lower score: ×0.03, by 14 sign-ups against a standard error of 39. ×0.075 and ×0.10 would have cost about 2,400 to 7,900 more sign-ups.
+- **Why check 5 switched:** with 183,945 pulls left and arm 21 about 6 standard errors ahead, no later stage could benefit from more data on the runners-up. ×0.05 would still have spent a few pulls on arms 12 and 0 (about 44 sign-ups lost in expectation). ×0.02 makes their bonus too small to overtake arm 21.
+- **Validation:** on fresh worlds, ×0.02 lowered expected regret by 51.5 sign-ups (upper bound −44.8) and 95% CVaR by 167 (upper bound −95). Every one of the last 183,945 pulls went to arm 21. Stage 3.4 had put 13 of its 200,000 pulls elsewhere, so the switch changed the total by tens of sign-ups at most.
+- **What this shows:** the value of exploring falls as the remaining budget shrinks, and a time-varying multiplier picks this up near the end of the horizon.
+
+### The live run itself
+
+- **The continuous run:** 983,945 pulls from 12 November 00:30 to 14 November 21:24 Singapore time (68 h 54 m). That averaged 3.97 pulls per second, including about 8 minutes of tuning pauses.
+- **Retries:** 9 pulls had uncertain responses (14 retries in all). Each was resolved with the same request ID and counted once. No pull was lost or duplicated.
+
+### Files
+
+- [phase3/results/final_pulls.csv.gz](phase3/results/final_pulls.csv.gz): every pull, with arm, reward, server running total, model setting and save time.
+- [phase3/results/final_summary.json](phase3/results/final_summary.json): integrity checks, totals, stages, per-arm rates with 95% intervals and P(best), and leader stability.
+- [phase3/results/tuning_decisions.json](phase3/results/tuning_decisions.json): all five tuning decisions as the runner journaled them.
+- These three files are made read-only from the database by `python phase3/export_results.py`. The full database (116 MB) and event log (1 GB) are too large for GitHub. The copies in `program/data/` are the 15,055-pull snapshot. Ask for the full files if you need them.
+- `phase3/checklocalstatus.py` reports a run's progress, timing spread and tuning decisions from the local files, without network access.
+
 ## Continuous runs and optional tuning
 
-Online execution is paused. After recovering only the original pending request,
-server and local history agree on **15,055 pulls** and **365,500 sign-ups**, with
-**no pending request** (12 November 2026, Singapore time). The group has **984,945
-pulls remaining**. No new batch run was started. See the [recovery verification](phase3/results/pending_recovery_2026-11-12.json).
-Older stage reports below are historical snapshots, not the current counters.
+Online execution is complete; see [Final results](#final-results-all-1000000-pulls) above. The stage reports
+further down are historical snapshots taken during the run.
 
 From the project root:
 
